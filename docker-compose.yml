@@ -1,0 +1,51 @@
+version: '3'
+services:
+  redis:
+    image: "redis:4.0.11-stretch"
+    domainname: "discourse.docker"
+  postgres:
+    hostname: "postgres"
+    domainname: "discourse.docker"
+    image: "postgres:10"
+    restart: always
+    ports:
+    - "5432:5432"
+    volumes:
+    - pgdata:/var/lib/postgresql/data
+    environment:
+    - POSTGRES_USER=discourse
+    - POSTGRES_PASSWORD=discourse
+  discourse:
+    build: .
+    domainname: "discourse.docker"
+    hostname: discourse
+    ports:
+    # discourse web ui post
+    - "3000:3000"
+    # mailcatcher web ui port
+    - "1080:1080"
+    # mailcatcher smtp port
+    - "1025:1025"
+    volumes:
+    - ./:/data
+    environment:
+    - PGHOST=postgres
+    - PGPORT=5432
+    - PGUSER=discourse
+    - PGDATABASE=discourse
+    - PGPASSWORD=discourse
+    - UNICORN_SIDEKIQS=2
+    # this is to override database.yml values
+    - DATABASE_URL=postgres://discourse:discourse@postgres:5432/discourse_development
+    # ENV values to override dafault configuration values
+    - DISCOURSE_DB_PASSWORD=discourse
+    - DISCOURSE_REDIS_HOST=redis
+    # this is needed to be able to register the first account
+    - DISCOURSE_DEVELOPER_EMAILS=dev@discourse.docker
+    tty: true
+    depends_on:
+    - redis
+    - postgres
+volumes:
+  pgdata:
+    driver: local
